@@ -384,6 +384,13 @@
             }
         }
 
+        function updateSelectedPreset(color) {
+            const buttons = presetColorsContainer.querySelectorAll('.preset-color');
+            buttons.forEach(button => {
+                button.classList.toggle('selected', button.dataset.color.toLowerCase() === color.toLowerCase());
+            });
+        }
+
         function openModal(modalEl) {
             const backdrop = modalEl.querySelector('.modal-backdrop');
             const panel = modalEl.querySelector('.modal-panel');
@@ -420,6 +427,7 @@
             boldBtn.classList.toggle('active', modalTaskInput.style.fontWeight === 'bold');
             underlineBtn.classList.toggle('active', modalTaskInput.style.textDecoration === 'underline');
 
+            updateSelectedPreset(data.color);
             openModal(editModal);
         }
 
