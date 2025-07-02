@@ -224,7 +224,8 @@
 
             daysOfWeek.forEach((day, index) => {
                 const dayHeader = document.createElement('div');
-                dayHeader.className = 'day-header flex items-center justify-end font-bold text-sm border-b-2 border-gray-300 dark:border-gray-600 py-2 pr-2';
+                // FIX: flex 대신 text-right를 사용하고, 패딩을 조절하여 정렬을 맞춥니다.
+                dayHeader.className = 'day-header font-bold text-sm border-b-2 border-gray-300 dark:border-gray-600 p-2 text-right';
                 dayHeader.textContent = `${day} (${week[index].getDate()})`;
                 if (week[index].getDay() === 0) dayHeader.classList.add('text-red-500');
                 if (week[index].getDay() === 6) dayHeader.classList.add('text-blue-500');
