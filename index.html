@@ -12,7 +12,6 @@
         }
         .week-grid {
             display: grid;
-            grid-template-columns: 50px repeat(7, 1fr);
             grid-template-rows: 40px repeat(24, 100px);
             gap: 1px; 
             background-color: #374151;
@@ -25,6 +24,7 @@
             color: #d1d5db;
         }
         .planner-cell {
+            position: relative;
             min-height: 100px;
             font-size: 12px;
             overflow-y: auto;
@@ -34,10 +34,10 @@
         .planner-cell:hover {
             background-color: #334155;
         }
-        #edit-modal-backdrop {
+        .modal-backdrop {
             transition: opacity 0.3s ease;
         }
-        #edit-modal-panel {
+        .modal-panel {
             transition: all 0.3s ease;
         }
         [contenteditable]:empty:before {
@@ -55,6 +55,26 @@
         .preset-color.selected {
             box-shadow: 0 0 0 3px #3b82f6;
         }
+        .fill-handle {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background-color: #3b82f6;
+            cursor: crosshair;
+            border: 1px solid #1f2937;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .planner-cell:hover .fill-handle {
+            opacity: 1;
+        }
+        .fill-preview {
+            border: 2px dashed #3b82f6 !important;
+            background-color: rgba(59, 130, 246, 0.2) !important;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -62,19 +82,30 @@
     <div id="app" class="container mx-auto p-4 max-w-7xl">
         <header class="text-center mb-6">
             <h1 class="text-4xl font-bold text-white">주간 시간표 플래너</h1>
-            <p class="text-gray-400 mt-2">한 주를 한눈에 계획하고 관리하세요.</p>
-            <div id="user-info" class="mt-3 text-sm text-gray-300"></div>
+            <p class="text-gray-400 mt-2">원하는 기간의 계획을 한눈에 확인하세요.</p>
+            <div id="user-info" class="mt-3 text-sm text-gray-300 h-5"></div>
         </header>
 
-        <div class="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 flex items-center justify-between gap-4">
-            <button id="prev-week" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">이전 주</button>
-            <h2 id="week-range" class="text-lg font-bold text-center"></h2>
-            <button id="next-week" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">다음 주</button>
+        <div class="bg-gray-800 rounded-xl shadow-lg p-4 mb-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div class="flex items-center gap-2">
+                <label for="start-date" class="text-sm font-medium">시작일:</label>
+                <input type="date" id="start-date" class="bg-gray-700 text-white rounded-lg p-2 border-none outline-none">
+            </div>
+            <span class="hidden sm:block">~</span>
+            <div class="flex items-center gap-2">
+                <label for="end-date" class="text-sm font-medium">종료일:</label>
+                <input type="date" id="end-date" class="bg-gray-700 text-white rounded-lg p-2 border-none outline-none">
+            </div>
+            <button id="view-range-button" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">조회</button>
         </div>
         
-        <main id="timetable-container" class="bg-transparent">
+        <div class="flex justify-end mb-4">
+            <button id="reset-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold">선택 기간 초기화</button>
+        </div>
+
+        <main id="timetable-container" class="bg-transparent overflow-x-auto">
             <div id="timetable" class="week-grid">
-                <!-- 주간 시간표가 여기에 동적으로 생성됩니다. -->
+                <!-- 시간표가 여기에 동적으로 생성됩니다. -->
             </div>
         </main>
         
@@ -85,9 +116,9 @@
 
     <!-- Edit Modal -->
     <div id="edit-modal" class="fixed inset-0 z-50 hidden">
-        <div id="edit-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="modal-backdrop fixed inset-0 bg-black bg-opacity-50"></div>
         <div class="relative flex items-center justify-center min-h-screen p-4">
-            <div id="edit-modal-panel" class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 transform scale-95 opacity-0">
+            <div class="modal-panel bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 transform scale-95 opacity-0">
                 <h3 id="modal-title" class="text-xl font-bold mb-4">계획 수정</h3>
                 <div class="space-y-4">
                     <div>
@@ -117,10 +148,25 @@
         </div>
     </div>
 
+    <!-- Reset Confirmation Modal -->
+    <div id="reset-confirm-modal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="relative flex items-center justify-center min-h-screen p-4">
+            <div class="modal-panel bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 transform scale-95 opacity-0">
+                <h3 class="text-xl font-bold mb-2">정말 초기화하시겠습니까?</h3>
+                <p class="text-gray-400 mb-6 text-sm">선택된 기간의 모든 계획이 영구적으로 삭제되며, 되돌릴 수 없습니다.</p>
+                <div class="flex justify-end gap-3">
+                    <button id="reset-cancel-button" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors">아니요, 취소합니다</button>
+                    <button id="reset-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">예, 삭제합니다</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCFoSs_x3DB-1Gpo7yBphRtf27iTveT9Bc",
@@ -131,26 +177,27 @@
           appId: "1:485557245170:web:a72a7938442c65da61ec6b",
           measurementId: "G-249871NBGE"
         };
-        
-        const appId = 'daily-planner-github'; // GitHub용 고유 ID
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         let userId = null;
-        let currentDate = new Date();
+        let dateRange = [];
         let weekData = {};
 
-        const timetable = document.getElementById('timetable');
-        const weekRangeEl = document.getElementById('week-range');
-        const prevWeekBtn = document.getElementById('prev-week');
-        const nextWeekBtn = document.getElementById('next-week');
-        const userInfoElement = document.getElementById('user-info');
+        let isFilling = false;
+        let fillSourceData = null;
+        let fillSourceCell = null;
 
-        const modal = document.getElementById('edit-modal');
-        const modalBackdrop = document.getElementById('edit-modal-backdrop');
-        const modalPanel = document.getElementById('edit-modal-panel');
+        const timetable = document.getElementById('timetable');
+        const userInfoElement = document.getElementById('user-info');
+        const startDatePicker = document.getElementById('start-date');
+        const endDatePicker = document.getElementById('end-date');
+        const viewRangeButton = document.getElementById('view-range-button');
+        const resetButton = document.getElementById('reset-button');
+        
+        const editModal = document.getElementById('edit-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalTaskInput = document.getElementById('modal-task-input');
         const modalColorInput = document.getElementById('modal-color-input');
@@ -158,6 +205,10 @@
         const modalCancelButton = document.getElementById('modal-cancel-button');
         const presetColorsContainer = document.getElementById('preset-colors');
         let currentEditingCell = null;
+
+        const resetModal = document.getElementById('reset-confirm-modal');
+        const resetConfirmButton = document.getElementById('reset-confirm-button');
+        const resetCancelButton = document.getElementById('reset-cancel-button');
 
         function getTextColorForBg(hexColor) {
             if (!hexColor) return '#111827';
@@ -173,65 +224,59 @@
             return date.toISOString().split('T')[0];
         }
 
-        function getWeekInfo(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            const weekStart = new Date(d.setDate(diff));
-            const week = [];
-            for (let i = 0; i < 7; i++) {
-                const dayInWeek = new Date(weekStart);
-                dayInWeek.setDate(weekStart.getDate() + i);
-                week.push(dayInWeek);
+        function getDateRange(start, end) {
+            const dates = [];
+            let currentDate = new Date(start);
+            const endDate = new Date(end);
+            while (currentDate <= endDate) {
+                dates.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
             }
-            return week;
+            return dates;
         }
         
-        async function loadWeekData() {
+        async function loadDataForRange() {
             if (!userId) {
-                renderWeekView(); 
+                renderPlannerView(); 
                 return;
             };
-            const week = getWeekInfo(currentDate);
-            weekRangeEl.textContent = `${formatDate(week[0])} ~ ${formatDate(week[6])}`;
             
-            const promises = week.map(day => {
+            const promises = dateRange.map(day => {
                 const formattedDate = formatDate(day);
-                // FIX: 데이터 저장 경로를 올바른 구조로 수정합니다.
-                const dbRef = doc(db, 'artifacts', appId, 'users', userId, 'schedules', formattedDate);
+                const dbRef = doc(db, "schedules", `${userId}-${formattedDate}`);
                 return getDoc(dbRef);
             });
 
             const results = await Promise.all(promises);
             weekData = {};
             results.forEach((docSnap, index) => {
-                const formattedDate = formatDate(week[index]);
+                const formattedDate = formatDate(dateRange[index]);
                 if (docSnap.exists()) {
                     weekData[formattedDate] = docSnap.data().schedule || {};
                 }
             });
-            renderWeekView();
+            renderPlannerView();
         }
 
-        function renderWeekView() {
+        function renderPlannerView() {
             timetable.innerHTML = '';
-            const week = getWeekInfo(currentDate);
+            if (dateRange.length === 0) {
+                timetable.style.gridTemplateColumns = '1fr';
+                timetable.innerHTML = `<div class="col-span-1 flex items-center justify-center text-gray-500 h-full">조회할 날짜 범위를 선택해주세요.</div>`;
+                return;
+            }
+
+            timetable.style.gridTemplateColumns = `50px repeat(${dateRange.length}, 1fr)`;
             const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
             timetable.appendChild(document.createElement('div'));
 
-            daysOfWeek.forEach((day, index) => {
+            dateRange.forEach(date => {
                 const dayHeader = document.createElement('div');
                 dayHeader.className = 'day-header flex items-center justify-center p-2 font-bold text-sm';
-                
-                dayHeader.textContent = `${day} (${week[index].getDate()})`;
-
-                if (week[index].getDay() === 0) {
-                    dayHeader.classList.add('text-red-400');
-                }
-                if (week[index].getDay() === 6) {
-                    dayHeader.classList.add('text-blue-400');
-                }
+                dayHeader.textContent = `${daysOfWeek[date.getDay()]} (${date.getDate()})`;
+                if (date.getDay() === 0) dayHeader.classList.add('text-red-400');
+                if (date.getDay() === 6) dayHeader.classList.add('text-blue-400');
                 timetable.appendChild(dayHeader);
             });
 
@@ -241,26 +286,39 @@
                 timeLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
                 timetable.appendChild(timeLabel);
 
-                for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                dateRange.forEach(date => {
+                    const formattedDate = formatDate(date);
                     const cell = document.createElement('div');
-                    const formattedDate = formatDate(week[dayIndex]);
                     const hourStr = hour.toString().padStart(2, '0');
                     cell.id = `cell-${formattedDate}-${hourStr}`;
                     cell.className = 'planner-cell p-2 cursor-pointer'; 
                     cell.dataset.date = formattedDate;
                     cell.dataset.hour = hourStr;
 
+                    const taskSpan = document.createElement('span');
+                    taskSpan.className = 'task-text';
+                    cell.appendChild(taskSpan);
+
+                    const fillHandle = document.createElement('div');
+                    fillHandle.className = 'fill-handle';
+                    cell.appendChild(fillHandle);
+                    fillHandle.addEventListener('mousedown', handleFillStart);
+
                     const daySchedule = weekData[formattedDate];
                     if (daySchedule && daySchedule[hourStr]) {
                         const { task, color } = daySchedule[hourStr];
-                        cell.textContent = task;
+                        taskSpan.textContent = task;
                         cell.style.backgroundColor = color;
                         cell.style.color = getTextColorForBg(color);
                     }
                     
-                    cell.addEventListener('click', () => openEditModal(cell));
+                    cell.addEventListener('click', (e) => {
+                        if (e.target.classList.contains('fill-handle')) return;
+                        openEditModal(cell);
+                    });
+                    
                     timetable.appendChild(cell);
-                }
+                });
             }
         }
 
@@ -269,6 +327,22 @@
             buttons.forEach(button => {
                 button.classList.toggle('selected', button.dataset.color.toLowerCase() === color.toLowerCase());
             });
+        }
+
+        function openModal(modalEl) {
+            const backdrop = modalEl.querySelector('.modal-backdrop');
+            const panel = modalEl.querySelector('.modal-panel');
+            modalEl.classList.remove('hidden');
+            backdrop.classList.remove('opacity-0');
+            panel.classList.remove('scale-95', 'opacity-0');
+        }
+
+        function closeModal(modalEl) {
+            const backdrop = modalEl.querySelector('.modal-backdrop');
+            const panel = modalEl.querySelector('.modal-panel');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modalEl.classList.add('hidden'), 300);
         }
 
         function openEditModal(cell) {
@@ -283,61 +357,155 @@
             modalTaskInput.style.backgroundColor = data.color;
             modalTaskInput.style.color = getTextColorForBg(data.color);
             updateSelectedPreset(data.color);
-
-            modal.classList.remove('hidden');
-            modalBackdrop.classList.remove('opacity-0');
-            modalPanel.classList.remove('scale-95', 'opacity-0');
-        }
-
-        function closeModal() {
-            currentEditingCell = null;
-            modalBackdrop.classList.add('opacity-0');
-            modalPanel.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
+            openModal(editModal);
         }
 
         async function saveSchedule() {
             if (!currentEditingCell) return;
-            
-            if (!userId) {
-                alert("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
-                closeModal();
-                return;
-            }
-            
             const { date, hour } = currentEditingCell.dataset;
             const task = modalTaskInput.innerText;
             const color = modalColorInput.value;
-
-            if (!weekData[date]) {
-                weekData[date] = {};
-            }
-            weekData[date][hour] = { task, color };
-
-            // FIX: 데이터 저장 경로를 올바른 구조로 수정합니다.
-            const dbRef = doc(db, 'artifacts', appId, 'users', userId, 'schedules', date);
             
-            currentEditingCell.innerText = task;
+            currentEditingCell.querySelector('.task-text').textContent = task;
             currentEditingCell.style.backgroundColor = color;
             currentEditingCell.style.color = getTextColorForBg(color);
-            
-            closeModal();
 
+            await saveData(date, hour, task, color);
+            closeModal(editModal);
+        }
+
+        async function saveData(date, hour, task, color) {
+             if (!userId) return;
+            if (!weekData[date]) weekData[date] = {};
+            weekData[date][hour] = { task, color };
+            const dbRef = doc(db, "schedules", `${userId}-${date}`);
             try {
                 await setDoc(dbRef, { schedule: weekData[date] });
             } catch (error) {
                 console.error("저장 중 오류 발생:", error);
             }
         }
+        
+        function handleFillStart(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isFilling = true;
+            fillSourceCell = e.target.parentElement;
+            const { date, hour } = fillSourceCell.dataset;
 
-        function handleWeekChange(weeks) {
-            currentDate.setDate(currentDate.getDate() + (weeks * 7));
-            if(userId) {
-                loadWeekData();
+            const sourceDayData = weekData[date];
+            const sourceHourData = sourceDayData ? sourceDayData[hour] : null;
+            
+            if (sourceHourData && sourceHourData.task) {
+                 fillSourceData = { task: sourceHourData.task, color: sourceHourData.color };
             } else {
-                const week = getWeekInfo(currentDate);
-                weekRangeEl.textContent = `${formatDate(week[0])} ~ ${formatDate(week[6])}`;
-                renderWeekView();
+                isFilling = false;
+                return;
+            }
+
+            document.addEventListener('mousemove', handleFillDrag);
+            document.addEventListener('mouseup', handleFillEnd);
+        }
+
+        function handleFillDrag(e) {
+            if (!isFilling) return;
+            
+            document.querySelectorAll('.fill-preview').forEach(cell => cell.classList.remove('fill-preview'));
+
+            const targetCell = e.target.closest('.planner-cell');
+            if (!targetCell) return;
+
+            const sourceDate = fillSourceCell.dataset.date;
+            const sourceHour = parseInt(fillSourceCell.dataset.hour, 10);
+            const targetDate = targetCell.dataset.date;
+            const targetHour = parseInt(targetCell.dataset.hour, 10);
+
+            // FIX: 상하좌우 모든 방향으로 드래그가 가능하도록 로직을 수정합니다.
+            if (targetDate === sourceDate) { // Vertical drag
+                const [start, end] = sourceHour < targetHour ? [sourceHour, targetHour] : [targetHour, sourceHour];
+                for (let h = start; h <= end; h++) {
+                    if (h === sourceHour) continue;
+                    const hourStr = h.toString().padStart(2, '0');
+                    const cellToPreview = document.getElementById(`cell-${sourceDate}-${hourStr}`);
+                    if (cellToPreview) cellToPreview.classList.add('fill-preview');
+                }
+            } else if (targetHour === sourceHour) { // Horizontal drag
+                const sourceDateIndex = dateRange.findIndex(d => formatDate(d) === sourceDate);
+                const targetDateIndex = dateRange.findIndex(d => formatDate(d) === targetDate);
+                
+                if (sourceDateIndex === -1 || targetDateIndex === -1) return;
+
+                const [start, end] = sourceDateIndex < targetDateIndex ? [sourceDateIndex, targetDateIndex] : [targetDateIndex, sourceDateIndex];
+                
+                for (let i = start; i <= end; i++) {
+                    if (i === sourceDateIndex) continue;
+                    const dateStr = formatDate(dateRange[i]);
+                    const cellToPreview = document.getElementById(`cell-${dateStr}-${fillSourceCell.dataset.hour}`);
+                    if (cellToPreview) cellToPreview.classList.add('fill-preview');
+                }
+            }
+        }
+
+        async function handleFillEnd(e) {
+            if (!isFilling) return;
+            isFilling = false;
+            
+            const cellsToFill = document.querySelectorAll('.fill-preview');
+            const datesToUpdate = new Map();
+            
+            cellsToFill.forEach(cell => {
+                const { date, hour } = cell.dataset;
+                cell.querySelector('.task-text').textContent = fillSourceData.task;
+                cell.style.backgroundColor = fillSourceData.color;
+                cell.style.color = getTextColorForBg(fillSourceData.color);
+                if (!weekData[date]) weekData[date] = {};
+                weekData[date][hour] = fillSourceData;
+                datesToUpdate.set(date, true);
+                cell.classList.remove('fill-preview');
+            });
+
+            if (cellsToFill.length > 0 && userId) {
+                const savePromises = [];
+                for (const date of datesToUpdate.keys()) {
+                    const dbRef = doc(db, "schedules", `${userId}-${date}`);
+                    savePromises.push(setDoc(dbRef, { schedule: weekData[date] }));
+                }
+                try {
+                    await Promise.all(savePromises);
+                } catch (error) {
+                    console.error("드래그 채우기 저장 중 오류 발생:", error);
+                }
+            }
+
+            document.removeEventListener('mousemove', handleFillDrag);
+            document.removeEventListener('mouseup', handleFillEnd);
+        }
+        
+        async function clearSelectedRange() {
+            closeModal(resetModal);
+            if (!userId) {
+                userInfoElement.textContent = '로그인 정보가 없어 초기화할 수 없습니다.';
+                setTimeout(() => { userInfoElement.textContent = '로그인되지 않았습니다. (저장 불가)'; }, 2000);
+                return;
+            }
+
+            const deletePromises = dateRange.map(day => {
+                const formattedDate = formatDate(day);
+                delete weekData[formattedDate];
+                const dbRef = doc(db, "schedules", `${userId}-${formattedDate}`);
+                return deleteDoc(dbRef);
+            });
+
+            try {
+                await Promise.all(deletePromises);
+                renderPlannerView(); 
+                userInfoElement.textContent = '선택한 기간의 계획이 모두 삭제되었습니다.';
+                setTimeout(() => { userInfoElement.textContent = '로그인 되었습니다.'; }, 2000);
+            } catch (error) {
+                console.error("초기화 중 오류 발생:", error);
+                userInfoElement.textContent = '초기화에 실패했습니다.';
+                setTimeout(() => { userInfoElement.textContent = '로그인 되었습니다.'; }, 2000);
             }
         }
 
@@ -345,21 +513,61 @@
             if (user) {
                 userId = user.uid;
                 userInfoElement.textContent = `로그인 되었습니다.`;
-                loadWeekData();
+                loadDataForRange();
             } else {
                 userId = null;
                 userInfoElement.textContent = '로그인되지 않았습니다. (저장 불가)';
-                renderWeekView();
+                renderPlannerView();
             }
         });
 
-        async function main() {
-            prevWeekBtn.addEventListener('click', () => handleWeekChange(-1));
-            nextWeekBtn.addEventListener('click', () => handleWeekChange(1));
-            modalSaveButton.addEventListener('click', saveSchedule);
-            modalCancelButton.addEventListener('click', closeModal);
-            modalBackdrop.addEventListener('click', closeModal);
+        function initialize() {
+            const today = new Date();
+            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
+            const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 6));
+            
+            startDatePicker.value = formatDate(weekStart);
+            endDatePicker.value = formatDate(weekEnd);
+            
+            dateRange = getDateRange(startDatePicker.value, endDatePicker.value);
+        }
 
+        async function main() {
+            initialize();
+            loadDataForRange(); // 초기 로딩
+
+            viewRangeButton.addEventListener('click', () => {
+                const start = new Date(startDatePicker.value);
+                const end = new Date(endDatePicker.value);
+
+                if (end < start) {
+                    userInfoElement.textContent = "종료일은 시작일보다 빠를 수 없습니다.";
+                    setTimeout(() => { userInfoElement.textContent = userId ? '로그인 되었습니다.' : '로그인되지 않았습니다. (저장 불가)'; }, 2000);
+                    return;
+                }
+
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                if (diffDays > 31) {
+                    userInfoElement.textContent = "최대 31일까지 조회할 수 있습니다.";
+                     setTimeout(() => { userInfoElement.textContent = userId ? '로그인 되었습니다.' : '로그인되지 않았습니다. (저장 불가)'; }, 2000);
+                    return;
+                }
+
+                dateRange = getDateRange(startDatePicker.value, endDatePicker.value);
+                loadDataForRange();
+            });
+            
+            modalSaveButton.addEventListener('click', saveSchedule);
+            modalCancelButton.addEventListener('click', () => closeModal(editModal));
+            editModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(editModal));
+
+            resetButton.addEventListener('click', () => openModal(resetModal));
+            resetConfirmButton.addEventListener('click', clearSelectedRange);
+            resetCancelButton.addEventListener('click', () => closeModal(resetModal));
+            resetModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(resetModal));
+            
             presetColorsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('preset-color')) {
                     const currentTask = modalTaskInput.innerText;
@@ -386,7 +594,7 @@
             } catch (error) {
                 console.error("로그인 중 오류 발생:", error);
                 userInfoElement.textContent = '로그인에 실패했습니다. 저장 기능 사용 불가.';
-                renderWeekView();
+                renderPlannerView();
             }
         }
 
