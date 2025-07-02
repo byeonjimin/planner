@@ -15,15 +15,14 @@
             grid-template-columns: 50px repeat(7, 1fr);
             grid-template-rows: 40px repeat(24, 100px);
             gap: 1px; 
-            background-color: #374151; /* 선 색상 (다크모드) */
+            background-color: #374151;
             border: 1px solid #374151; 
             border-radius: 0.75rem; 
             overflow: hidden; 
         }
-        /* 각 셀의 배경색을 지정하여 선이 보이게 합니다. */
         .day-header, .time-label, .planner-cell {
             background-color: #1f2937;
-            color: #d1d5db; /* 기본 텍스트 색상을 밝게 */
+            color: #d1d5db;
         }
         .planner-cell {
             min-height: 100px;
@@ -35,14 +34,12 @@
         .planner-cell:hover {
             background-color: #334155;
         }
-        
         #edit-modal-backdrop {
             transition: opacity 0.3s ease;
         }
         #edit-modal-panel {
             transition: all 0.3s ease;
         }
-
         [contenteditable]:empty:before {
             content: attr(placeholder);
             pointer-events: none;
@@ -121,12 +118,21 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO_KEY", authDomain: "DEMO.firebaseapp.com", projectId: "DEMO" };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'daily-planner';
+        const firebaseConfig = {
+          apiKey: "AIzaSyCFoSs_x3DB-1Gpo7yBphRtf27iTveT9Bc",
+          authDomain: "planner-a267f.firebaseapp.com",
+          projectId: "planner-a267f",
+          storageBucket: "planner-a267f.appspot.com",
+          messagingSenderId: "485557245170",
+          appId: "1:485557245170:web:a72a7938442c65da61ec6b",
+          measurementId: "G-249871NBGE"
+        };
+
+        const appId = 'daily-planner-github';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -231,7 +237,6 @@
             for (let hour = 0; hour < 24; hour++) {
                 const timeLabel = document.createElement('div');
                 timeLabel.className = 'time-label flex items-center justify-center text-xs';
-                // FIX: 사라졌던 시간 표시 코드를 다시 추가합니다.
                 timeLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
                 timetable.appendChild(timeLabel);
 
@@ -294,7 +299,7 @@
             if (!currentEditingCell) return;
             
             if (!userId) {
-                console.log("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
+                alert("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
                 closeModal();
                 return;
             }
@@ -302,6 +307,12 @@
             const { date, hour } = currentEditingCell.dataset;
             const task = modalTaskInput.innerText;
             const color = modalColorInput.value;
+
+            // FIX: 로컬 데이터 캐시를 먼저 업데이트합니다.
+            if (!weekData[date]) {
+                weekData[date] = {};
+            }
+            weekData[date][hour] = { task, color };
 
             const dbRef = doc(db, 'artifacts', appId, 'users', userId, 'schedules', date);
             
@@ -312,11 +323,8 @@
             closeModal();
 
             try {
-                await setDoc(dbRef, {
-                    schedule: {
-                        [hour]: { task, color }
-                    }
-                }, { merge: true });
+                // FIX: 다른 시간의 데이터가 날아가지 않도록 해당 날짜의 전체 스케줄을 저장합니다.
+                await setDoc(dbRef, { schedule: weekData[date] });
             } catch (error) {
                 console.error("저장 중 오류 발생:", error);
             }
@@ -336,17 +344,17 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
-                userInfoElement.textContent = `사용자 ID: ${userId}`;
+                userInfoElement.textContent = `로그인 되었습니다.`;
                 loadWeekData();
             } else {
                 userId = null;
                 userInfoElement.textContent = '로그인되지 않았습니다. (저장 불가)';
+                renderWeekView();
             }
         });
 
         async function main() {
-            renderWeekView();
-
+            // FIX: 실수로 삭제되었던 이벤트 리스너들을 다시 추가합니다.
             prevWeekBtn.addEventListener('click', () => handleWeekChange(-1));
             nextWeekBtn.addEventListener('click', () => handleWeekChange(1));
             modalSaveButton.addEventListener('click', saveSchedule);
@@ -355,36 +363,33 @@
 
             presetColorsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('preset-color')) {
+                    // FIX: 색상 변경 시 내용이 사라지는 버그를 막기 위해, 현재 내용을 임시 저장했다가 다시 적용합니다.
+                    const currentTask = modalTaskInput.innerText;
                     const color = e.target.dataset.color;
                     modalColorInput.value = color;
                     modalTaskInput.style.backgroundColor = color;
                     modalTaskInput.style.color = getTextColorForBg(color);
                     updateSelectedPreset(color);
+                    modalTaskInput.innerText = currentTask;
                 }
             });
 
             modalColorInput.addEventListener('input', (e) => {
+                // FIX: 색상 변경 시 내용이 사라지는 버그를 막기 위해, 현재 내용을 임시 저장했다가 다시 적용합니다.
+                const currentTask = modalTaskInput.innerText;
                 const color = e.target.value;
                 modalTaskInput.style.backgroundColor = color;
                 modalTaskInput.style.color = getTextColorForBg(color);
                 updateSelectedPreset(color);
-            });
-
-            modalTaskInput.addEventListener('input', (e) => {
-                if (e.target.innerText.trim() === '') {
-                    e.target.innerHTML = '';
-                }
+                modalTaskInput.innerText = currentTask;
             });
 
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
             } catch (error) {
                 console.error("로그인 중 오류 발생:", error);
-                userInfoElement.textContent = '로그인에 실패했습니다.';
+                userInfoElement.textContent = '로그인에 실패했습니다. 저장 기능 사용 불가.';
+                renderWeekView();
             }
         }
 
