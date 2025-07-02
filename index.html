@@ -13,8 +13,8 @@
         .week-grid {
             display: grid;
             grid-template-columns: 50px repeat(7, 1fr);
-            /* FIX: 각 칸의 세로 길이를 80px로 늘렸습니다. */
-            grid-template-rows: 40px repeat(24, 80px);
+            /* FIX: 각 칸의 세로 길이를 100px로 늘렸습니다. */
+            grid-template-rows: 40px repeat(24, 100px);
         }
         .time-label {
             grid-column: 1;
@@ -23,8 +23,8 @@
             grid-row: 1;
         }
         .planner-cell {
-            /* FIX: 최소 높이도 80px로 맞췄습니다. */
-            min-height: 80px;
+            /* FIX: 최소 높이도 100px로 맞췄습니다. */
+            min-height: 100px;
             font-size: 12px;
             overflow-y: auto;
             border-right: 1px solid #e5e7eb;
@@ -209,7 +209,7 @@
             results.forEach((docSnap, index) => {
                 const formattedDate = formatDate(week[index]);
                 if (docSnap.exists()) {
-                    weekData[formattedDate] = docSnap.data().schedule;
+                    weekData[formattedDate] = docSnap.data().schedule || {};
                 }
             });
             renderWeekView();
@@ -224,7 +224,6 @@
 
             daysOfWeek.forEach((day, index) => {
                 const dayHeader = document.createElement('div');
-                // FIX: flex 대신 text-right를 사용하고, 패딩을 조절하여 정렬을 맞춥니다.
                 dayHeader.className = 'day-header font-bold text-sm border-b-2 border-gray-300 dark:border-gray-600 p-2 text-right';
                 dayHeader.textContent = `${day} (${week[index].getDate()})`;
                 if (week[index].getDay() === 0) dayHeader.classList.add('text-red-500');
@@ -243,7 +242,7 @@
                     const formattedDate = formatDate(week[dayIndex]);
                     const hourStr = hour.toString().padStart(2, '0');
                     cell.id = `cell-${formattedDate}-${hourStr}`;
-                    cell.className = 'planner-cell p-2 cursor-pointer'; // Padding-2로 늘림
+                    cell.className = 'planner-cell p-2 cursor-pointer'; 
                     cell.dataset.date = formattedDate;
                     cell.dataset.hour = hourStr;
 
@@ -296,7 +295,6 @@
         async function saveSchedule() {
             if (!currentEditingCell) return;
             
-            // 로그인 안 된 상태면 UI만 업데이트하고 저장하지 않음
             if (!userId) {
                 alert("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
                 closeModal();
@@ -313,14 +311,15 @@
             currentEditingCell.style.backgroundColor = color;
             currentEditingCell.style.color = getTextColorForBg(color);
             
-            if (!weekData[date]) weekData[date] = {};
-            weekData[date][hour] = { task, color };
-
             closeModal();
 
             try {
-                // FIX: 해당 날짜의 전체 스케줄을 저장하여 데이터 덮어쓰기 방지
-                await setDoc(dbRef, { schedule: weekData[date] });
+                // FIX: 데이터를 덮어쓰지 않고 특정 시간만 업데이트하도록 merge: true 옵션을 사용합니다.
+                await setDoc(dbRef, {
+                    schedule: {
+                        [hour]: { task, color }
+                    }
+                }, { merge: true });
             } catch (error) {
                 console.error("저장 중 오류 발생:", error);
             }
@@ -328,7 +327,6 @@
 
         function handleWeekChange(weeks) {
             currentDate.setDate(currentDate.getDate() + (weeks * 7));
-            // 로그인 상태와 관계없이 주간 이동 가능
             if(userId) {
                 loadWeekData();
             } else {
