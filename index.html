@@ -29,8 +29,8 @@
             overflow-y: auto;
             transition: background-color 0.2s, color 0.2s;
         }
+        /* FIX: 텍스트와 핸들이 겹치지 않도록 구조를 변경하고, 패딩을 셀에 적용합니다. */
         .task-text {
-            padding: 0.5rem;
             word-break: break-all;
             min-height: 100%;
             display: block;
@@ -352,12 +352,12 @@
                     const cell = document.createElement('div');
                     const hourStr = hour.toString().padStart(2, '0');
                     cell.id = `cell-${formattedDate}-${hourStr}`;
-                    cell.className = 'planner-cell'; 
+                    cell.className = 'planner-cell p-2'; 
                     cell.dataset.date = formattedDate;
                     cell.dataset.hour = hourStr;
 
                     const taskSpan = document.createElement('span');
-                    taskSpan.className = 'task-text p-2 block';
+                    taskSpan.className = 'task-text';
                     cell.appendChild(taskSpan);
 
                     const fillHandle = document.createElement('div');
@@ -477,7 +477,6 @@
             const sourceDayData = weekData[date];
             const sourceHourData = sourceDayData ? sourceDayData[hour] : null;
             
-            // FIX: 글씨가 없어도 색상만 있으면 드래그가 가능하도록 수정합니다.
             if (sourceHourData) {
                  fillSourceData = sourceHourData;
             } else {
