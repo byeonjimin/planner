@@ -13,36 +13,29 @@
         .week-grid {
             display: grid;
             grid-template-columns: 50px repeat(7, 1fr);
-            /* FIX: 각 칸의 세로 길이를 100px로 늘렸습니다. */
             grid-template-rows: 40px repeat(24, 100px);
+            gap: 1px; 
+            background-color: #374151; /* 선 색상 (다크모드) */
+            border: 1px solid #374151; 
+            border-radius: 0.75rem; 
+            overflow: hidden; 
         }
-        .time-label {
-            grid-column: 1;
-        }
-        .day-header {
-            grid-row: 1;
+        /* 각 셀의 배경색을 지정하여 선이 보이게 합니다. */
+        .day-header, .time-label, .planner-cell {
+            background-color: #1f2937;
+            color: #d1d5db; /* 기본 텍스트 색상을 밝게 */
         }
         .planner-cell {
-            /* FIX: 최소 높이도 100px로 맞췄습니다. */
             min-height: 100px;
             font-size: 12px;
             overflow-y: auto;
-            border-right: 1px solid #e5e7eb;
-            border-bottom: 1px solid #e5e7eb;
             transition: background-color 0.2s, color 0.2s;
             font-weight: 500;
         }
-        .dark .planner-cell {
-            border-color: #374151;
-        }
         .planner-cell:hover {
-            background-color: #f0f9ff;
-        }
-        .dark .planner-cell:hover {
-            background-color: #1e293b;
+            background-color: #334155;
         }
         
-        /* Modal */
         #edit-modal-backdrop {
             transition: opacity 0.3s ease;
         }
@@ -50,7 +43,6 @@
             transition: all 0.3s ease;
         }
 
-        /* contenteditable 플레이스홀더 */
         [contenteditable]:empty:before {
             content: attr(placeholder);
             pointer-events: none;
@@ -58,39 +50,38 @@
             color: #9ca3af;
             font-weight: 400;
         }
-        /* 입력된 텍스트 스타일 */
         #modal-task-input {
             font-weight: 600;
             transition: background-color 0.2s;
+            background-color: #374151;
         }
         .preset-color.selected {
             box-shadow: 0 0 0 3px #3b82f6;
         }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="bg-gray-900 text-gray-200">
 
     <div id="app" class="container mx-auto p-4 max-w-7xl">
         <header class="text-center mb-6">
-            <h1 class="text-4xl font-bold text-gray-800 dark:text-white">주간 시간표 플래너</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">한 주를 한눈에 계획하고 관리하세요.</p>
-            <div id="user-info" class="mt-3 text-sm text-gray-600 dark:text-gray-300"></div>
+            <h1 class="text-4xl font-bold text-white">주간 시간표 플래너</h1>
+            <p class="text-gray-400 mt-2">한 주를 한눈에 계획하고 관리하세요.</p>
+            <div id="user-info" class="mt-3 text-sm text-gray-300"></div>
         </header>
 
-        <!-- 주간 네비게이션 -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mb-6 flex items-center justify-between gap-4">
-            <button id="prev-week" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">이전 주</button>
+        <div class="bg-gray-800 rounded-xl shadow-lg p-4 mb-6 flex items-center justify-between gap-4">
+            <button id="prev-week" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">이전 주</button>
             <h2 id="week-range" class="text-lg font-bold text-center"></h2>
-            <button id="next-week" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">다음 주</button>
+            <button id="next-week" class="px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">다음 주</button>
         </div>
-
-        <main id="timetable-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-x-auto">
+        
+        <main id="timetable-container" class="bg-transparent">
             <div id="timetable" class="week-grid">
                 <!-- 주간 시간표가 여기에 동적으로 생성됩니다. -->
             </div>
         </main>
         
-        <footer class="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm">
+        <footer class="text-center mt-8 text-gray-400 text-sm">
             <p>&copy; 2025 Your Daily Planner. All rights reserved.</p>
         </footer>
     </div>
@@ -99,30 +90,30 @@
     <div id="edit-modal" class="fixed inset-0 z-50 hidden">
         <div id="edit-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50"></div>
         <div class="relative flex items-center justify-center min-h-screen p-4">
-            <div id="edit-modal-panel" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 transform scale-95 opacity-0">
+            <div id="edit-modal-panel" class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 transform scale-95 opacity-0">
                 <h3 id="modal-title" class="text-xl font-bold mb-4">계획 수정</h3>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">계획 내용</label>
-                        <div id="modal-task-input" contenteditable="true" placeholder="무엇을 할 계획인가요?" class="w-full min-h-[80px] p-3 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">계획 내용</label>
+                        <div id="modal-task-input" contenteditable="true" placeholder="무엇을 할 계획인가요?" class="w-full min-h-[80px] p-3 border border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">색상 선택</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">색상 선택</label>
                         <div id="preset-colors" class="flex flex-wrap gap-2 mb-2">
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#ffffff" style="background-color: #ffffff;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#ffadad" style="background-color: #ffadad;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#ffd6a5" style="background-color: #ffd6a5;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#fdffb6" style="background-color: #fdffb6;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#caffbf" style="background-color: #caffbf;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#9bf6ff" style="background-color: #9bf6ff;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#a0c4ff" style="background-color: #a0c4ff;"></button>
-                           <button class="preset-color w-8 h-8 rounded-full border border-gray-200" data-color="#bdb2ff" style="background-color: #bdb2ff;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#1f2937" style="background-color: #1f2937;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#ffadad" style="background-color: #ffadad;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#ffd6a5" style="background-color: #ffd6a5;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#fdffb6" style="background-color: #fdffb6;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#caffbf" style="background-color: #caffbf;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#9bf6ff" style="background-color: #9bf6ff;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#a0c4ff" style="background-color: #a0c4ff;"></button>
+                           <button class="preset-color w-8 h-8 rounded-full border border-gray-600" data-color="#bdb2ff" style="background-color: #bdb2ff;"></button>
                         </div>
                         <input type="color" id="modal-color-input" class="w-full h-10 p-0 border-none rounded-lg cursor-pointer bg-transparent">
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end gap-3">
-                    <button id="modal-cancel-button" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">취소</button>
+                    <button id="modal-cancel-button" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors">취소</button>
                     <button id="modal-save-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">저장</button>
                 </div>
             </div>
@@ -192,7 +183,7 @@
         
         async function loadWeekData() {
             if (!userId) {
-                renderWeekView(); // 로그인 안돼도 일단 틀은 보여주기
+                renderWeekView(); 
                 return;
             };
             const week = getWeekInfo(currentDate);
@@ -224,16 +215,23 @@
 
             daysOfWeek.forEach((day, index) => {
                 const dayHeader = document.createElement('div');
-                dayHeader.className = 'day-header font-bold text-sm border-b-2 border-gray-300 dark:border-gray-600 p-2 text-right';
+                dayHeader.className = 'day-header flex items-center justify-center p-2 font-bold text-sm';
+                
                 dayHeader.textContent = `${day} (${week[index].getDate()})`;
-                if (week[index].getDay() === 0) dayHeader.classList.add('text-red-500');
-                if (week[index].getDay() === 6) dayHeader.classList.add('text-blue-500');
+
+                if (week[index].getDay() === 0) {
+                    dayHeader.classList.add('text-red-400');
+                }
+                if (week[index].getDay() === 6) {
+                    dayHeader.classList.add('text-blue-400');
+                }
                 timetable.appendChild(dayHeader);
             });
 
             for (let hour = 0; hour < 24; hour++) {
                 const timeLabel = document.createElement('div');
-                timeLabel.className = 'time-label flex items-center justify-center text-xs text-gray-500 border-r border-b dark:border-gray-700';
+                timeLabel.className = 'time-label flex items-center justify-center text-xs';
+                // FIX: 사라졌던 시간 표시 코드를 다시 추가합니다.
                 timeLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
                 timetable.appendChild(timeLabel);
 
@@ -271,7 +269,7 @@
             currentEditingCell = cell;
             const { date, hour } = cell.dataset;
             const daySchedule = weekData[date];
-            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#ffffff' };
+            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#1f2937' };
 
             modalTitle.textContent = `${date} ${hour}:00 계획 수정`;
             modalTaskInput.innerText = data.task;
@@ -296,7 +294,7 @@
             if (!currentEditingCell) return;
             
             if (!userId) {
-                alert("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
+                console.log("로그인 정보가 없어 저장할 수 없습니다. 이 내용은 새로고침하면 사라집니다.");
                 closeModal();
                 return;
             }
@@ -314,7 +312,6 @@
             closeModal();
 
             try {
-                // FIX: 데이터를 덮어쓰지 않고 특정 시간만 업데이트하도록 merge: true 옵션을 사용합니다.
                 await setDoc(dbRef, {
                     schedule: {
                         [hour]: { task, color }
