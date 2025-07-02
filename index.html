@@ -12,6 +12,7 @@
         }
         .week-grid {
             display: grid;
+            grid-template-rows: 40px repeat(24, 100px);
             gap: 1px; 
             background-color: #374151;
             border: 1px solid #374151; 
@@ -24,6 +25,7 @@
         }
         .planner-cell {
             position: relative;
+            min-height: 100px;
             overflow-y: auto;
             transition: background-color 0.2s, color 0.2s;
         }
@@ -475,11 +477,11 @@
             const sourceDayData = weekData[date];
             const sourceHourData = sourceDayData ? sourceDayData[hour] : null;
             
-            if (sourceHourData && sourceHourData.task) {
+            // FIX: 글씨가 없어도 색상만 있으면 드래그가 가능하도록 수정합니다.
+            if (sourceHourData) {
                  fillSourceData = sourceHourData;
             } else {
-                isFilling = false;
-                return;
+                 fillSourceData = { task: '', color: '#1f2937', fontSize: '12px', fontWeight: 'normal', textDecoration: 'none' };
             }
 
             document.addEventListener('mousemove', handleFillDrag);
@@ -691,6 +693,23 @@
             });
             fontsizeInput.addEventListener('input', (e) => {
                 modalTaskInput.style.fontSize = e.target.value + 'px';
+            });
+
+            presetColorsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('preset-color')) {
+                    const color = e.target.dataset.color;
+                    modalColorInput.value = color;
+                    modalTaskInput.style.backgroundColor = color;
+                    modalTaskInput.style.color = getTextColorForBg(color);
+                    updateSelectedPreset(color);
+                }
+            });
+
+            modalColorInput.addEventListener('input', (e) => {
+                const color = e.target.value;
+                modalTaskInput.style.backgroundColor = color;
+                modalTaskInput.style.color = getTextColorForBg(color);
+                updateSelectedPreset(color);
             });
 
             try {
