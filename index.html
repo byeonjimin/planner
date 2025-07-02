@@ -149,7 +149,6 @@
         const nextWeekBtn = document.getElementById('next-week');
         const userInfoElement = document.getElementById('user-info');
 
-        // Modal elements
         const modal = document.getElementById('edit-modal');
         const modalBackdrop = document.getElementById('edit-modal-backdrop');
         const modalPanel = document.getElementById('edit-modal-panel');
@@ -161,15 +160,13 @@
         const presetColorsContainer = document.getElementById('preset-colors');
         let currentEditingCell = null;
 
-        // --- NEW HELPER FUNCTION ---
-        // 배경색의 밝기를 계산하여 적절한 텍스트 색상(검정/흰색)을 반환합니다.
         function getTextColorForBg(hexColor) {
+            if (!hexColor) return '#111827';
             const hex = hexColor.replace('#', '');
             const r = parseInt(hex.substring(0, 2), 16);
             const g = parseInt(hex.substring(2, 4), 16);
             const b = parseInt(hex.substring(4, 6), 16);
             const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-            // 밝기가 186 이상이면 어두운 텍스트, 아니면 밝은 텍스트를 반환합니다.
             return luminance > 186 ? '#111827' : '#f9fafb';
         }
 
@@ -249,7 +246,6 @@
                         const { task, color } = daySchedule[hourStr];
                         cell.textContent = task;
                         cell.style.backgroundColor = color;
-                        // FIX: 렌더링 시 텍스트 색상 설정
                         cell.style.color = getTextColorForBg(color);
                     }
                     
@@ -276,7 +272,6 @@
             modalTaskInput.innerText = data.task;
             modalColorInput.value = data.color;
             modalTaskInput.style.backgroundColor = data.color;
-            // FIX: 모달 열 때 텍스트 색상 설정
             modalTaskInput.style.color = getTextColorForBg(data.color);
             updateSelectedPreset(data.color);
 
@@ -303,7 +298,6 @@
             
             currentEditingCell.innerText = task;
             currentEditingCell.style.backgroundColor = color;
-            // FIX: 저장 시 텍스트 색상 설정
             currentEditingCell.style.color = getTextColorForBg(color);
             
             if (!weekData[date]) weekData[date] = {};
@@ -335,6 +329,9 @@
         });
 
         async function main() {
+            // FIX: 로그인 시도 전에 시간표 틀을 먼저 그립니다.
+            renderWeekView();
+
             prevWeekBtn.addEventListener('click', () => handleWeekChange(-1));
             nextWeekBtn.addEventListener('click', () => handleWeekChange(1));
             modalSaveButton.addEventListener('click', saveSchedule);
@@ -346,7 +343,6 @@
                     const color = e.target.dataset.color;
                     modalColorInput.value = color;
                     modalTaskInput.style.backgroundColor = color;
-                    // FIX: 대표 색상 클릭 시 텍스트 색상 설정
                     modalTaskInput.style.color = getTextColorForBg(color);
                     updateSelectedPreset(color);
                 }
@@ -355,7 +351,6 @@
             modalColorInput.addEventListener('input', (e) => {
                 const color = e.target.value;
                 modalTaskInput.style.backgroundColor = color;
-                // FIX: 색상표에서 직접 선택 시 텍스트 색상 설정
                 modalTaskInput.style.color = getTextColorForBg(color);
                 updateSelectedPreset(color);
             });
@@ -383,4 +378,3 @@
 </body>
 </html>
 ```
-
