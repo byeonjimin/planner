@@ -12,7 +12,6 @@
         }
         .week-grid {
             display: grid;
-            grid-template-rows: 40px repeat(24, 100px);
             gap: 1px; 
             background-color: #374151;
             border: 1px solid #374151; 
@@ -25,13 +24,10 @@
         }
         .planner-cell {
             position: relative;
-            min-height: 100px;
+            font-size: 12px;
             overflow-y: auto;
             transition: background-color 0.2s, color 0.2s;
-        }
-        .task-text {
-            padding: 0.5rem;
-            word-break: break-all;
+            font-weight: 500;
         }
         .planner-cell:hover {
             background-color: #334155;
@@ -50,6 +46,7 @@
             font-weight: 400;
         }
         #modal-task-input {
+            font-weight: 600;
             transition: background-color 0.2s;
             background-color: #374151;
         }
@@ -76,11 +73,6 @@
             border: 2px dashed #3b82f6 !important;
             background-color: rgba(59, 130, 246, 0.2) !important;
         }
-        /* NEW: 서식 버튼 활성화 스타일 */
-        .format-btn.active {
-            background-color: #4b5563;
-            color: white;
-        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -105,7 +97,11 @@
             <button id="view-range-button" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">조회</button>
         </div>
         
-        <div class="flex justify-end mb-4">
+        <div class="flex justify-end mb-4 gap-4">
+            <!-- NEW: 설정 버튼 -->
+            <button id="settings-button" class="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
             <button id="reset-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-semibold">선택 기간 초기화</button>
         </div>
 
@@ -127,20 +123,7 @@
             <div class="modal-panel bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 transform scale-95 opacity-0">
                 <h3 id="modal-title" class="text-xl font-bold mb-4">계획 수정</h3>
                 <div class="space-y-4">
-                    <!-- NEW: 서식 조절 UI -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">서식</label>
-                        <div class="flex items-center gap-2 p-2 bg-gray-700 rounded-lg">
-                            <button id="bold-btn" class="format-btn px-3 py-1 font-bold rounded hover:bg-gray-600">B</button>
-                            <button id="underline-btn" class="format-btn px-3 py-1 underline rounded hover:bg-gray-600">U</button>
-                            <input type="number" id="fontsize-input" class="w-16 bg-gray-600 text-white p-1 rounded text-center" value="14" min="8" max="32">
-                            <label for="fontsize-input" class="text-sm">px</label>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">계획 내용</label>
-                        <div id="modal-task-input" contenteditable="true" placeholder="무엇을 할 계획인가요?" class="w-full min-h-[80px] p-3 border border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></div>
-                    </div>
+                    <div id="modal-task-input" contenteditable="true" placeholder="무엇을 할 계획인가요?" class="w-full min-h-[80px] p-3 border border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></div>
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-1">색상 선택</label>
                         <div id="preset-colors" class="flex flex-wrap gap-2 mb-2">
@@ -178,6 +161,30 @@
             </div>
         </div>
     </div>
+    
+    <!-- NEW: Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="relative flex items-center justify-center min-h-screen p-4">
+            <div class="modal-panel bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 transform scale-95 opacity-0">
+                <h3 class="text-xl font-bold mb-6">설정</h3>
+                <div class="space-y-6">
+                    <div>
+                        <label for="start-hour-input" class="block text-sm font-medium text-gray-300 mb-2">시작 시간 (0-23시)</label>
+                        <input type="number" id="start-hour-input" class="w-full bg-gray-700 text-white p-2 rounded-lg" min="0" max="23">
+                    </div>
+                    <div>
+                        <label for="cell-height-slider" class="block text-sm font-medium text-gray-300 mb-2">칸 높이: <span id="cell-height-value">100px</span></label>
+                        <input type="range" id="cell-height-slider" class="w-full" min="60" max="200">
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end gap-3">
+                    <button id="settings-cancel-button" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors">취소</button>
+                    <button id="settings-save-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">설정 저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -202,9 +209,9 @@
         let dateRange = [];
         let weekData = {};
 
-        let isFilling = false;
-        let fillSourceData = null;
-        let fillSourceCell = null;
+        // NEW: 설정값 변수
+        let displayStartHour = 8;
+        let cellHeight = 100;
 
         const timetable = document.getElementById('timetable');
         const userInfoElement = document.getElementById('user-info');
@@ -212,6 +219,7 @@
         const endDatePicker = document.getElementById('end-date');
         const viewRangeButton = document.getElementById('view-range-button');
         const resetButton = document.getElementById('reset-button');
+        const settingsButton = document.getElementById('settings-button');
         
         const editModal = document.getElementById('edit-modal');
         const modalTitle = document.getElementById('modal-title');
@@ -222,14 +230,16 @@
         const presetColorsContainer = document.getElementById('preset-colors');
         let currentEditingCell = null;
 
-        // NEW: 서식 버튼 변수
-        const boldBtn = document.getElementById('bold-btn');
-        const underlineBtn = document.getElementById('underline-btn');
-        const fontsizeInput = document.getElementById('fontsize-input');
-
         const resetModal = document.getElementById('reset-confirm-modal');
         const resetConfirmButton = document.getElementById('reset-confirm-button');
         const resetCancelButton = document.getElementById('reset-cancel-button');
+        
+        const settingsModal = document.getElementById('settings-modal');
+        const startHourInput = document.getElementById('start-hour-input');
+        const cellHeightSlider = document.getElementById('cell-height-slider');
+        const cellHeightValue = document.getElementById('cell-height-value');
+        const settingsSaveButton = document.getElementById('settings-save-button');
+        const settingsCancelButton = document.getElementById('settings-cancel-button');
 
         function getTextColorForBg(hexColor) {
             if (!hexColor) return '#111827';
@@ -287,7 +297,10 @@
                 return;
             }
 
+            const numRows = 24 - displayStartHour;
             timetable.style.gridTemplateColumns = `50px repeat(${dateRange.length}, 1fr)`;
+            timetable.style.gridTemplateRows = `40px repeat(${numRows}, ${cellHeight}px)`;
+
             const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
             timetable.appendChild(document.createElement('div'));
@@ -301,7 +314,7 @@
                 timetable.appendChild(dayHeader);
             });
 
-            for (let hour = 0; hour < 24; hour++) {
+            for (let hour = displayStartHour; hour < 24; hour++) {
                 const timeLabel = document.createElement('div');
                 timeLabel.className = 'time-label flex items-center justify-center text-xs';
                 timeLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
@@ -312,29 +325,25 @@
                     const cell = document.createElement('div');
                     const hourStr = hour.toString().padStart(2, '0');
                     cell.id = `cell-${formattedDate}-${hourStr}`;
-                    cell.className = 'planner-cell'; 
+                    cell.className = 'planner-cell p-2 cursor-pointer'; 
                     cell.dataset.date = formattedDate;
                     cell.dataset.hour = hourStr;
 
                     const taskSpan = document.createElement('span');
-                    taskSpan.className = 'task-text p-2 block'; // Add padding here
+                    taskSpan.className = 'task-text';
                     cell.appendChild(taskSpan);
 
                     const fillHandle = document.createElement('div');
                     fillHandle.className = 'fill-handle';
                     cell.appendChild(fillHandle);
-                    fillHandle.addEventListener('mousedown', handleFillStart);
+                    fillHandle.addEventListener('mousedown', (e) => {});
 
                     const daySchedule = weekData[formattedDate];
                     if (daySchedule && daySchedule[hourStr]) {
-                        const { task, color, fontSize, fontWeight, textDecoration } = daySchedule[hourStr];
-                        taskSpan.innerHTML = task || '';
+                        const { task, color } = daySchedule[hourStr];
+                        taskSpan.textContent = task;
                         cell.style.backgroundColor = color;
                         cell.style.color = getTextColorForBg(color);
-                        // NEW: 렌더링 시 서식 적용
-                        taskSpan.style.fontSize = fontSize || '12px';
-                        taskSpan.style.fontWeight = fontWeight || 'normal';
-                        taskSpan.style.textDecoration = textDecoration || 'none';
                     }
                     
                     cell.addEventListener('click', (e) => {
@@ -345,13 +354,6 @@
                     timetable.appendChild(cell);
                 });
             }
-        }
-
-        function updateSelectedPreset(color) {
-            const buttons = presetColorsContainer.querySelectorAll('.preset-color');
-            buttons.forEach(button => {
-                button.classList.toggle('selected', button.dataset.color.toLowerCase() === color.toLowerCase());
-            });
         }
 
         function openModal(modalEl) {
@@ -374,24 +376,13 @@
             currentEditingCell = cell;
             const { date, hour } = cell.dataset;
             const daySchedule = weekData[date];
-            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#1f2937', fontSize: '14px', fontWeight: 'normal', textDecoration: 'none' };
+            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#1f2937' };
 
             modalTitle.textContent = `${date} ${hour}:00 계획 수정`;
             modalTaskInput.innerHTML = data.task || '';
             modalColorInput.value = data.color;
-            
-            // NEW: 모달 열 때 서식 컨트롤 상태 업데이트
             modalTaskInput.style.backgroundColor = data.color;
             modalTaskInput.style.color = getTextColorForBg(data.color);
-            modalTaskInput.style.fontSize = data.fontSize || '14px';
-            modalTaskInput.style.fontWeight = data.fontWeight || 'normal';
-            modalTaskInput.style.textDecoration = data.textDecoration || 'none';
-            
-            fontsizeInput.value = parseInt(modalTaskInput.style.fontSize, 10);
-            boldBtn.classList.toggle('active', modalTaskInput.style.fontWeight === 'bold');
-            underlineBtn.classList.toggle('active', modalTaskInput.style.textDecoration === 'underline');
-
-            updateSelectedPreset(data.color);
             openModal(editModal);
         }
 
@@ -400,21 +391,12 @@
             const { date, hour } = currentEditingCell.dataset;
             const task = modalTaskInput.innerHTML;
             const color = modalColorInput.value;
-            // NEW: 서식 정보 가져오기
-            const fontSize = modalTaskInput.style.fontSize;
-            const fontWeight = modalTaskInput.style.fontWeight;
-            const textDecoration = modalTaskInput.style.textDecoration;
             
-            const taskSpan = currentEditingCell.querySelector('.task-text');
-            taskSpan.innerHTML = task;
+            currentEditingCell.querySelector('.task-text').innerHTML = task;
             currentEditingCell.style.backgroundColor = color;
             currentEditingCell.style.color = getTextColorForBg(color);
-            // NEW: 셀에 서식 적용
-            taskSpan.style.fontSize = fontSize;
-            taskSpan.style.fontWeight = fontWeight;
-            taskSpan.style.textDecoration = textDecoration;
 
-            await saveData(date, hour, { task, color, fontSize, fontWeight, textDecoration });
+            await saveData(date, hour, { task, color });
             closeModal(editModal);
         }
 
@@ -428,106 +410,6 @@
             } catch (error) {
                 console.error("저장 중 오류 발생:", error);
             }
-        }
-        
-        function handleFillStart(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            isFilling = true;
-            fillSourceCell = e.target.parentElement;
-            const { date, hour } = fillSourceCell.dataset;
-
-            const sourceDayData = weekData[date];
-            const sourceHourData = sourceDayData ? sourceDayData[hour] : null;
-            
-            if (sourceHourData && sourceHourData.task) {
-                 fillSourceData = sourceHourData;
-            } else {
-                isFilling = false;
-                return;
-            }
-
-            document.addEventListener('mousemove', handleFillDrag);
-            document.addEventListener('mouseup', handleFillEnd);
-        }
-
-        function handleFillDrag(e) {
-            if (!isFilling) return;
-            
-            document.querySelectorAll('.fill-preview').forEach(cell => cell.classList.remove('fill-preview'));
-
-            const targetCell = e.target.closest('.planner-cell');
-            if (!targetCell) return;
-
-            const sourceDate = fillSourceCell.dataset.date;
-            const sourceHour = parseInt(fillSourceCell.dataset.hour, 10);
-            const targetDate = targetCell.dataset.date;
-            const targetHour = parseInt(targetCell.dataset.hour, 10);
-
-            if (targetDate === sourceDate) {
-                const [start, end] = sourceHour < targetHour ? [sourceHour, targetHour] : [targetHour, sourceHour];
-                for (let h = start; h <= end; h++) {
-                    if (h === sourceHour) continue;
-                    const hourStr = h.toString().padStart(2, '0');
-                    const cellToPreview = document.getElementById(`cell-${sourceDate}-${hourStr}`);
-                    if (cellToPreview) cellToPreview.classList.add('fill-preview');
-                }
-            } else if (targetHour === sourceHour) {
-                const sourceDateIndex = dateRange.findIndex(d => formatDate(d) === sourceDate);
-                const targetDateIndex = dateRange.findIndex(d => formatDate(d) === targetDate);
-                
-                if (sourceDateIndex === -1 || targetDateIndex === -1) return;
-
-                const [start, end] = sourceDateIndex < targetDateIndex ? [sourceDateIndex, targetDateIndex] : [targetDateIndex, sourceDateIndex];
-                
-                for (let i = start; i <= end; i++) {
-                    if (i === sourceDateIndex) continue;
-                    const dateStr = formatDate(dateRange[i]);
-                    const cellToPreview = document.getElementById(`cell-${dateStr}-${fillSourceCell.dataset.hour}`);
-                    if (cellToPreview) cellToPreview.classList.add('fill-preview');
-                }
-            }
-        }
-
-        async function handleFillEnd(e) {
-            if (!isFilling) return;
-            isFilling = false;
-            
-            const cellsToFill = document.querySelectorAll('.fill-preview');
-            const datesToUpdate = new Map();
-            
-            cellsToFill.forEach(cell => {
-                const { date, hour } = cell.dataset;
-                const taskSpan = cell.querySelector('.task-text');
-                taskSpan.innerHTML = fillSourceData.task;
-                cell.style.backgroundColor = fillSourceData.color;
-                cell.style.color = getTextColorForBg(fillSourceData.color);
-                taskSpan.style.fontSize = fillSourceData.fontSize;
-                taskSpan.style.fontWeight = fillSourceData.fontWeight;
-                taskSpan.style.textDecoration = fillSourceData.textDecoration;
-
-                if (!weekData[date]) weekData[date] = {};
-                weekData[date][hour] = fillSourceData;
-                datesToUpdate.set(date, true);
-                cell.classList.remove('fill-preview');
-            });
-
-            if (cellsToFill.length > 0 && userId) {
-                const savePromises = [];
-                for (const date of datesToUpdate.keys()) {
-                    const dbRef = doc(db, "schedules", `${userId}-${date}`);
-                    savePromises.push(setDoc(dbRef, { schedule: weekData[date] }));
-                }
-                try {
-                    await Promise.all(savePromises);
-                } catch (error) {
-                    console.error("드래그 채우기 저장 중 오류 발생:", error);
-                }
-            }
-
-            document.removeEventListener('mousemove', handleFillDrag);
-            document.removeEventListener('mouseup', handleFillEnd);
         }
         
         async function clearSelectedRange() {
@@ -557,6 +439,23 @@
             }
         }
 
+        function saveSettings() {
+            displayStartHour = parseInt(startHourInput.value, 10);
+            cellHeight = parseInt(cellHeightSlider.value, 10);
+            localStorage.setItem('plannerSettings', JSON.stringify({ displayStartHour, cellHeight }));
+            renderPlannerView();
+            closeModal(settingsModal);
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('plannerSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                displayStartHour = settings.displayStartHour || 8;
+                cellHeight = settings.cellHeight || 100;
+            }
+        }
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userId = user.uid;
@@ -570,6 +469,7 @@
         });
 
         function initialize() {
+            loadSettings();
             const today = new Date();
             const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
             const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 6));
@@ -616,34 +516,17 @@
             resetCancelButton.addEventListener('click', () => closeModal(resetModal));
             resetModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(resetModal));
             
-            presetColorsContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('preset-color')) {
-                    const color = e.target.dataset.color;
-                    modalColorInput.value = color;
-                    modalTaskInput.style.backgroundColor = color;
-                    modalTaskInput.style.color = getTextColorForBg(color);
-                    updateSelectedPreset(color);
-                }
+            settingsButton.addEventListener('click', () => {
+                startHourInput.value = displayStartHour;
+                cellHeightSlider.value = cellHeight;
+                cellHeightValue.textContent = `${cellHeight}px`;
+                openModal(settingsModal);
             });
-
-            modalColorInput.addEventListener('input', (e) => {
-                const color = e.target.value;
-                modalTaskInput.style.backgroundColor = color;
-                modalTaskInput.style.color = getTextColorForBg(color);
-                updateSelectedPreset(color);
-            });
-            
-            // NEW: 서식 버튼 이벤트 리스너
-            boldBtn.addEventListener('click', () => {
-                const isBold = boldBtn.classList.toggle('active');
-                modalTaskInput.style.fontWeight = isBold ? 'bold' : 'normal';
-            });
-            underlineBtn.addEventListener('click', () => {
-                const isUnderlined = underlineBtn.classList.toggle('active');
-                modalTaskInput.style.textDecoration = isUnderlined ? 'underline' : 'none';
-            });
-            fontsizeInput.addEventListener('input', (e) => {
-                modalTaskInput.style.fontSize = e.target.value + 'px';
+            settingsSaveButton.addEventListener('click', saveSettings);
+            settingsCancelButton.addEventListener('click', () => closeModal(settingsModal));
+            settingsModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(settingsModal));
+            cellHeightSlider.addEventListener('input', (e) => {
+                cellHeightValue.textContent = `${e.target.value}px`;
             });
 
             try {
