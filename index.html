@@ -131,8 +131,8 @@
           appId: "1:485557245170:web:a72a7938442c65da61ec6b",
           measurementId: "G-249871NBGE"
         };
-
-        const appId = 'daily-planner-github';
+        
+        const appId = 'daily-planner-github'; // GitHub용 고유 ID
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -197,6 +197,7 @@
             
             const promises = week.map(day => {
                 const formattedDate = formatDate(day);
+                // FIX: 데이터 저장 경로를 올바른 구조로 수정합니다.
                 const dbRef = doc(db, 'artifacts', appId, 'users', userId, 'schedules', formattedDate);
                 return getDoc(dbRef);
             });
@@ -308,12 +309,12 @@
             const task = modalTaskInput.innerText;
             const color = modalColorInput.value;
 
-            // FIX: 로컬 데이터 캐시를 먼저 업데이트합니다.
             if (!weekData[date]) {
                 weekData[date] = {};
             }
             weekData[date][hour] = { task, color };
 
+            // FIX: 데이터 저장 경로를 올바른 구조로 수정합니다.
             const dbRef = doc(db, 'artifacts', appId, 'users', userId, 'schedules', date);
             
             currentEditingCell.innerText = task;
@@ -323,7 +324,6 @@
             closeModal();
 
             try {
-                // FIX: 다른 시간의 데이터가 날아가지 않도록 해당 날짜의 전체 스케줄을 저장합니다.
                 await setDoc(dbRef, { schedule: weekData[date] });
             } catch (error) {
                 console.error("저장 중 오류 발생:", error);
@@ -354,7 +354,6 @@
         });
 
         async function main() {
-            // FIX: 실수로 삭제되었던 이벤트 리스너들을 다시 추가합니다.
             prevWeekBtn.addEventListener('click', () => handleWeekChange(-1));
             nextWeekBtn.addEventListener('click', () => handleWeekChange(1));
             modalSaveButton.addEventListener('click', saveSchedule);
@@ -363,7 +362,6 @@
 
             presetColorsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('preset-color')) {
-                    // FIX: 색상 변경 시 내용이 사라지는 버그를 막기 위해, 현재 내용을 임시 저장했다가 다시 적용합니다.
                     const currentTask = modalTaskInput.innerText;
                     const color = e.target.dataset.color;
                     modalColorInput.value = color;
@@ -375,7 +373,6 @@
             });
 
             modalColorInput.addEventListener('input', (e) => {
-                // FIX: 색상 변경 시 내용이 사라지는 버그를 막기 위해, 현재 내용을 임시 저장했다가 다시 적용합니다.
                 const currentTask = modalTaskInput.innerText;
                 const color = e.target.value;
                 modalTaskInput.style.backgroundColor = color;
