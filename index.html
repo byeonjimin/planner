@@ -7,33 +7,49 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --base-font-size: 14px;
+            --time-font-size: 12px;
+            --cell-height: 100px;
+        }
         body {
             font-family: 'Noto Sans KR', sans-serif;
         }
         .week-grid {
             display: grid;
-            grid-template-rows: 40px repeat(24, 100px);
             gap: 1px; 
             background-color: #374151;
             border: 1px solid #374151; 
             border-radius: 0.75rem; 
             overflow: hidden; 
         }
-        .day-header, .time-label, .planner-cell {
+        .day-header, .time-label {
             background-color: #1f2937;
             color: #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--base-font-size);
+            font-weight: bold;
+        }
+        .time-label {
+            font-size: var(--time-font-size);
         }
         .planner-cell {
             position: relative;
-            min-height: 100px;
+            background-color: #1f2937;
+            color: #d1d5db;
             overflow-y: auto;
             transition: background-color 0.2s, color 0.2s;
         }
-        /* FIX: 텍스트와 핸들이 겹치지 않도록 구조를 변경하고, 패딩을 셀에 적용합니다. */
         .task-text {
+            padding: 0.5rem;
             word-break: break-all;
             min-height: 100%;
             display: block;
+            font-size: var(--base-font-size);
+            font-weight: normal;
+            text-decoration: none;
         }
         .planner-cell:hover {
             background-color: #334155;
@@ -197,6 +213,10 @@
                         <label for="cell-height-slider" class="block text-sm font-medium text-gray-300 mb-2">칸 높이: <span id="cell-height-value">100px</span></label>
                         <input type="range" id="cell-height-slider" class="w-full" min="60" max="200">
                     </div>
+                    <div>
+                        <label for="base-font-size-slider" class="block text-sm font-medium text-gray-300 mb-2">기본 글자 크기: <span id="base-font-size-value">14px</span></label>
+                        <input type="range" id="base-font-size-slider" class="w-full" min="10" max="20">
+                    </div>
                 </div>
                 <div class="mt-8 flex justify-end gap-3">
                     <button id="settings-cancel-button" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors">취소</button>
@@ -231,6 +251,7 @@
 
         let displayStartHour = 8;
         let cellHeight = 100;
+        let baseFontSize = 14;
 
         let isFilling = false;
         let fillSourceData = null;
@@ -265,6 +286,8 @@
         const startHourInput = document.getElementById('start-hour-input');
         const cellHeightSlider = document.getElementById('cell-height-slider');
         const cellHeightValue = document.getElementById('cell-height-value');
+        const baseFontSizeSlider = document.getElementById('base-font-size-slider');
+        const baseFontSizeValue = document.getElementById('base-font-size-value');
         const settingsSaveButton = document.getElementById('settings-save-button');
         const settingsCancelButton = document.getElementById('settings-cancel-button');
 
@@ -316,7 +339,15 @@
             renderPlannerView();
         }
 
+        function applyGlobalStyles() {
+            const root = document.documentElement;
+            root.style.setProperty('--base-font-size', `${baseFontSize}px`);
+            root.style.setProperty('--time-font-size', `${Math.max(8, baseFontSize - 2)}px`);
+            root.style.setProperty('--cell-height', `${cellHeight}px`);
+        }
+
         function renderPlannerView() {
+            applyGlobalStyles();
             timetable.innerHTML = '';
             if (dateRange.length === 0) {
                 timetable.style.gridTemplateColumns = '1fr';
@@ -326,7 +357,7 @@
 
             const numRows = 24 - displayStartHour;
             timetable.style.gridTemplateColumns = `50px repeat(${dateRange.length}, 1fr)`;
-            timetable.style.gridTemplateRows = `40px repeat(${numRows}, ${cellHeight}px)`;
+            timetable.style.gridTemplateRows = `40px repeat(${numRows}, var(--cell-height))`;
 
             const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -334,7 +365,7 @@
 
             dateRange.forEach(date => {
                 const dayHeader = document.createElement('div');
-                dayHeader.className = 'day-header flex items-center justify-center p-2 font-bold text-sm';
+                dayHeader.className = 'day-header';
                 dayHeader.textContent = `${daysOfWeek[date.getDay()]} (${date.getDate()})`;
                 if (date.getDay() === 0) dayHeader.classList.add('text-red-400');
                 if (date.getDay() === 6) dayHeader.classList.add('text-blue-400');
@@ -343,7 +374,7 @@
 
             for (let hour = displayStartHour; hour < 24; hour++) {
                 const timeLabel = document.createElement('div');
-                timeLabel.className = 'time-label flex items-center justify-center text-xs';
+                timeLabel.className = 'time-label';
                 timeLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
                 timetable.appendChild(timeLabel);
 
@@ -352,7 +383,7 @@
                     const cell = document.createElement('div');
                     const hourStr = hour.toString().padStart(2, '0');
                     cell.id = `cell-${formattedDate}-${hourStr}`;
-                    cell.className = 'planner-cell p-2'; 
+                    cell.className = 'planner-cell'; 
                     cell.dataset.date = formattedDate;
                     cell.dataset.hour = hourStr;
 
@@ -371,7 +402,7 @@
                         taskSpan.innerHTML = task || '';
                         cell.style.backgroundColor = color;
                         cell.style.color = getTextColorForBg(color);
-                        taskSpan.style.fontSize = fontSize || '12px';
+                        taskSpan.style.fontSize = fontSize || 'var(--base-font-size)';
                         taskSpan.style.fontWeight = fontWeight || 'normal';
                         taskSpan.style.textDecoration = textDecoration || 'none';
                     }
@@ -413,7 +444,8 @@
             currentEditingCell = cell;
             const { date, hour } = cell.dataset;
             const daySchedule = weekData[date];
-            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#1f2937', fontSize: '14px', fontWeight: 'normal', textDecoration: 'none' };
+            const defaultFontSize = `${baseFontSize}px`;
+            const data = (daySchedule && daySchedule[hour]) ? daySchedule[hour] : { task: '', color: '#1f2937', fontSize: defaultFontSize, fontWeight: 'normal', textDecoration: 'none' };
 
             modalTitle.textContent = `${date} ${hour}:00 계획 수정`;
             modalTaskInput.innerHTML = data.task || '';
@@ -421,7 +453,7 @@
             
             modalTaskInput.style.backgroundColor = data.color;
             modalTaskInput.style.color = getTextColorForBg(data.color);
-            modalTaskInput.style.fontSize = data.fontSize || '14px';
+            modalTaskInput.style.fontSize = data.fontSize || defaultFontSize;
             modalTaskInput.style.fontWeight = data.fontWeight || 'normal';
             modalTaskInput.style.textDecoration = data.textDecoration || 'none';
             
@@ -480,7 +512,7 @@
             if (sourceHourData) {
                  fillSourceData = sourceHourData;
             } else {
-                 fillSourceData = { task: '', color: '#1f2937', fontSize: '12px', fontWeight: 'normal', textDecoration: 'none' };
+                 fillSourceData = { task: '', color: '#1f2937', fontSize: `${baseFontSize}px`, fontWeight: 'normal', textDecoration: 'none' };
             }
 
             document.addEventListener('mousemove', handleFillDrag);
@@ -595,7 +627,8 @@
         function saveSettings() {
             displayStartHour = parseInt(startHourInput.value, 10);
             cellHeight = parseInt(cellHeightSlider.value, 10);
-            localStorage.setItem('plannerSettings', JSON.stringify({ displayStartHour, cellHeight }));
+            baseFontSize = parseInt(baseFontSizeSlider.value, 10);
+            localStorage.setItem('plannerSettings', JSON.stringify({ displayStartHour, cellHeight, baseFontSize }));
             renderPlannerView();
             closeModal(settingsModal);
         }
@@ -606,6 +639,7 @@
                 const settings = JSON.parse(savedSettings);
                 displayStartHour = settings.displayStartHour || 8;
                 cellHeight = settings.cellHeight || 100;
+                baseFontSize = settings.baseFontSize || 14;
             }
         }
 
@@ -673,6 +707,8 @@
                 startHourInput.value = displayStartHour;
                 cellHeightSlider.value = cellHeight;
                 cellHeightValue.textContent = `${cellHeight}px`;
+                baseFontSizeSlider.value = baseFontSize;
+                baseFontSizeValue.textContent = `${baseFontSize}px`;
                 openModal(settingsModal);
             });
             settingsSaveButton.addEventListener('click', saveSettings);
@@ -680,6 +716,9 @@
             settingsModal.querySelector('.modal-backdrop').addEventListener('click', () => closeModal(settingsModal));
             cellHeightSlider.addEventListener('input', (e) => {
                 cellHeightValue.textContent = `${e.target.value}px`;
+            });
+            baseFontSizeSlider.addEventListener('input', (e) => {
+                baseFontSizeValue.textContent = `${e.target.value}px`;
             });
             
             boldBtn.addEventListener('click', () => {
